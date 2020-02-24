@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <button id="submit">提交</button>
+    <div id="result" style="color: green; font-weight: bold;"></div>
+    <script src="../lib/signalr.js"></script>
+    <script>
+        let connection = null;
+        setupConnection = () => {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/count")
+                .build();
+
+            connection.on("someFunc", function (obj) {
+                const resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = `Someone called this, parameters: ${obj.random}`;
+            });
+
+            connection.on("ReceiveUpdate", function (update) {
+                const resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = update;
+            })
+
+            connection.on("finished", function () {
+                connection.stop();
+                const resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = "Finished";
+            });
+
+            connection.start()
+                .catch(err => console.error(err.toString()));
+        };
+        setupConnection();
+
+        document.getElementById("submit").addEventListener("click", e => {
+            e.preventDefault();
+            fetch("/api/count",
+                {
+                    method: "POST"
+                })
+                //.then(response => {
+                //    console.log(response);
+                //    response.text();
+                //})
+                //.then(id => {
+                //    console.log(id);
+                //    connection.invoke("GetLatestCount", id);
+                //});
+                .then(connection.invoke("GetLatestCount", "random"));
+        });
+    </script>
+</body>
+</html>
